@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en-US">
+  <head>
+    <meta charset="utf-8" />
+    <title>pz-web example</title>
+  </head>
+  <body>
+    <script type="module">
+      import init, {
+        ni_hiring_init_web,
+        ni_hiring_client_setup_web,
+        ni_hiring_server_setup_web,
+        ni_hiring_client_encrypt_web,
+        ni_hiring_server_compute_web,
+        ni_hiring_client_dec_share_web,
+        ni_hiring_client_full_dec_web,
+      } from "./pz_web.js";
+
+      init().then(() => {
+        console.log("each time includes both parties");
+
+        console.time("setup time");
+        ni_hiring_init_web();
+        console.timeEnd("setup time");
+
+        console.time("ck_0 time");
+        let ck_0 = ni_hiring_client_setup_web(0, 2);
+        console.log(ck_0);
+        console.timeEnd("ck_0 time");
+
+        console.time("ck_1 time");
+        let ck_1 = ni_hiring_client_setup_web(1, 2);
+        console.timeEnd("ck_1 time");
+
+        console.time("server setup time");
+        ni_hiring_server_setup_web(
+          ck_0.server_key_share,
+          ck_1.server_key_share
+        );
+        console.timeEnd("server setup time");
+
+        console.time("jc_0_fhe time");
+        let jc_0_fhe = ni_hiring_client_encrypt_web(
+          ck_0,
+          true,
+          false,
+          100,
+          [1, 1, 1]
+        );
+        console.log(jc_0_fhe);
+        console.timeEnd("jc_0_fhe time");
+
+        console.time("jc_1_fhe time");
+        let jc_1_fhe = ni_hiring_client_encrypt_web(
+          ck_1,
+          true,
+          true,
+          150,
+          [1, 1, 1]
+        );
+        console.log(jc_1_fhe);
+        console.timeEnd("jc_1_fhe time");
+
+        console.time("res_fhe time");
+        let res_fhe = ni_hiring_server_compute_web(jc_0_fhe, jc_1_fhe);
+        console.timeEnd("res_fhe time");
+
+        console.time("res_fhe_share_0");
+        let res_fhe_share_0 = ni_hiring_client_dec_share_web(ck_0, res_fhe);
+        console.log(res_fhe_share_0);
+        console.timeEnd("res_fhe_share_0");
+
+        console.time("res_fhe_share_1");
+        let res_fhe_share_1 = ni_hiring_client_dec_share_web(ck_1, res_fhe);
+        console.log(res_fhe_share_1);
+        console.timeEnd("res_fhe_share_1");
+
+        console.time("res_fhe_full_dec");
+        let res = ni_hiring_client_full_dec_web(
+          ck_0,
+          res_fhe,
+          res_fhe_share_0,
+          res_fhe_share_1
+        );
+        console.timeEnd("res_fhe_full_dec");
+
+        console.log("Result", res);
+      });
+    </script>
+  </body>
+</html>

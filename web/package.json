@@ -1,0 +1,12 @@
+{
+  "name": "pz-web",
+  "version": "0.1.0",
+  "files": [
+    "pz_web_bg.wasm",
+    "pz_web.js",
+    "pz_web.d.ts"
+  ],
+  "module": "pz_web.js",
+  "types": "pz_web.d.ts",
+  "sideEffects": false
+}

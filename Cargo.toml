@@ -1,0 +1,16 @@
+[package]
+name = "pz-web"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+phantom-zone = {git="https://github.com/RiverRuby/phantom-zone", branch="wasm", features=["non_interactive_mp"]}
+getrandom = { version = "0.2", features = ["js"] }
+rand = "*"
+wasm-bindgen = "0.2"
+serde-wasm-bindgen = "0.4"
+serde = { version = "1.0", features = ["derive"] }
+web-sys = { version = "0.3.69", features = ['console'] }
