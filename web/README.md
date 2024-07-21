@@ -1,6 +1,6 @@
 # pz-web
 
-web compilation of a few useful phantom-zone applications
+Compiltion of a few useful phantom-zone applications usable in a browser.
 
 ## Commands
 

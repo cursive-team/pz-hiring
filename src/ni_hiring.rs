@@ -194,7 +194,7 @@ mod tests {
     use rand::{thread_rng, RngCore};
 
     #[test]
-    fn hiring_query() {
+    fn ni_hiring_query() {
         set_parameter_set(ParameterSelector::NonInteractiveLTE2Party);
 
         /*
