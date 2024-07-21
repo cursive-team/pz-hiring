@@ -1,6 +1,5 @@
 use phantom_zone::*;
 use serde::{Deserialize, Serialize};
-use web_sys::console;
 
 /**
  * HIRING MP-FHE MATCHING SPEC
@@ -49,42 +48,30 @@ fn hiring_match(a: JobCriteria, b: JobCriteria) -> bool {
         b_criteria_match &= !b.criteria[i] | a.criteria[i];
     }
 
+    // if a is not the recruiter, a's criteria is not required to be met
+    // same goes for b
     let criteria_match = (!a.position | a_criteria_match) & (!b.position | b_criteria_match);
 
     both_in_market & compatible_pos & salary_match & criteria_match
 }
 
 pub fn hiring_match_fhe(a: FheJobCriteria, b: FheJobCriteria) -> FheBool {
-    console::log_1(&"Step 1".into());
-
     let both_in_market: &FheBool = &(&a.in_market & &b.in_market);
-
-    console::log_1(&"Step 2".into());
 
     let compatible_pos: &FheBool = &(&a.position ^ &b.position);
 
-    console::log_1(&"Step 3".into());
-
     let salary_match: &FheBool = &((&a.salary.gt(&b.salary)) ^ &b.position);
-
-    console::log_1(&"Step 4".into());
 
     let mut a_criteria_match = &!&a.criteria[0] | &b.criteria[0];
     let mut b_criteria_match = &!&b.criteria[0] | &a.criteria[0];
-
-    console::log_1(&"Step 5".into());
 
     for i in 1..NUM_CRITERIA {
         a_criteria_match &= &!&a.criteria[i] | &b.criteria[i];
         b_criteria_match &= &!&b.criteria[i] | &a.criteria[i];
     }
 
-    console::log_1(&"Step 6".into());
-
     let criteria_match =
         &(&!&a.position | &a_criteria_match) & &(&!&b.position | &b_criteria_match);
-
-    console::log_1(&"Step 7".into());
 
     &(&(both_in_market & compatible_pos) & salary_match) & &criteria_match
 }
@@ -101,9 +88,7 @@ pub struct ClientKeys {
 
 pub fn client_setup(id: usize, num_parties: usize) -> ClientKeys {
     let client_key = gen_client_key();
-    console::log_1(&"Client key generated".into());
     let server_key_share = gen_server_key_share(id, num_parties, &client_key); // Changed `ck` to `client_key`
-    console::log_1(&"Server key share generated".into());
 
     ClientKeys {
         client_key,
@@ -127,8 +112,6 @@ pub struct ClientEncryptedData {
 }
 
 pub fn client_encrypt_job_criteria(jc: JobCriteria, ck: ClientKeys) -> ClientEncryptedData {
-    console::log_1(&"Started encryption".into());
-
     let bool_enc: NonInteractiveBatchedFheBools<_> = ck.client_key.encrypt(
         [jc.in_market, jc.position]
             .iter()
@@ -137,9 +120,7 @@ pub fn client_encrypt_job_criteria(jc: JobCriteria, ck: ClientKeys) -> ClientEnc
             .collect::<Vec<_>>()
             .as_slice(),
     );
-    console::log_1(&"Finished bool encryption".into());
     let salary_enc = ck.client_key.encrypt(vec![jc.salary].as_slice());
-    console::log_1(&"Finished salary encryption".into());
 
     ClientEncryptedData {
         bool_enc,
