@@ -50,7 +50,7 @@ pub fn ni_hiring_client_encrypt_web(
         .collect::<Vec<bool>>()
         .try_into()
         .unwrap();
-    let jc = Jo bCriteria {
+    let jc = JobCriteria {
         in_market,
         position,
         salary,
