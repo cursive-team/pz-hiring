@@ -114,11 +114,8 @@ pub fn client_encrypt_data(
     shares: &[CollectiveKeyShare],
     jc: JobCriteria,
 ) -> ClientEncryptedData {
-    console::log_1(&"6".into());
-    let collective_pk = aggregate_public_key_shares(&shares);
-    console::log_1(&"7".into());
+    let collective_pk = aggregate_public_key_shares(shares);
     let server_key_share = collective_server_key_share(&client_key, id, 2, &collective_pk);
-    console::log_1(&"8".into());
     let bool_enc = [jc.in_market, jc.position]
         .iter()
         .copied()
@@ -127,9 +124,7 @@ pub fn client_encrypt_data(
             data: collective_pk.encrypt(&val),
         })
         .collect_vec();
-    console::log_1(&"8".into());
     let salary_enc = collective_pk.encrypt(vec![jc.salary].as_slice());
-    console::log_1(&"9".into());
 
     ClientEncryptedData {
         bool_enc,
