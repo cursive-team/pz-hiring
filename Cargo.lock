@@ -146,7 +146,7 @@ checksum = "3fdb12b2476b595f9358c5161aa467c2438859caa136dec86c26fdd2efe17b92"
 [[package]]
 name = "phantom-zone"
 version = "0.1.0"
-source = "git+https://github.com/RiverRuby/phantom-zone?branch=wasm#48e86b87c1fcbaffbf846d2f5ebf6e5e6524fdae"
+source = "git+https://github.com/RiverRuby/phantom-zone?branch=wasm#ea05543022d39750a4134e3db3aab7f35a28bc98"
 dependencies = [
  "itertools",
  "num-bigint-dig",
@@ -177,6 +177,8 @@ name = "pz-web"
 version = "0.1.0"
 dependencies = [
  "getrandom",
+ "itertools",
+ "lazy_static",
  "phantom-zone",
  "rand",
  "serde",
