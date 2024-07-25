@@ -1,8 +1,7 @@
 use itertools::Itertools;
 use phantom_zone::*;
-use rand::{thread_rng, Rng, RngCore};
+use rand::{rngs::StdRng, thread_rng, Rng, RngCore, SeedableRng};
 use serde::{Deserialize, Serialize};
-use web_sys::console;
 
 /**
  * HIRING MP-FHE MATCHING SPEC
@@ -80,6 +79,13 @@ fn hiring_match_fhe(a: FheJobCriteria, b: FheJobCriteria) -> FheBool {
 /**
  * FHE SETUP CODE // ROUND
  */
+pub fn init(input_seed: u64) {
+    set_parameter_set(ParameterSelector::InteractiveLTE2Party);
+    let mut seed = [0u8; 32];
+    let mut rng = StdRng::seed_from_u64(input_seed); // Fixed seed for determinism
+    rng.fill_bytes(&mut seed);
+    set_common_reference_seed(seed);
+}
 
 #[derive(Clone, Serialize, Deserialize)]
 pub struct ClientKeys {
@@ -182,17 +188,13 @@ mod tests {
     // cargo test --release --package phantom-zone --example non_interactive_hiring -- --nocapture
     #[test]
     fn i_hiring_query() {
-        set_parameter_set(ParameterSelector::InteractiveLTE2Party);
-
         /*
          * Phase 1: KEY SETUP
          */
         println!("Interactive MP-FHE Key Setup");
 
         // set application's common reference seed
-        let mut seed = [0u8; 32];
-        thread_rng().fill_bytes(&mut seed);
-        set_common_reference_seed(seed);
+        init(12);
 
         // Client setup
         let mut now = std::time::Instant::now();
