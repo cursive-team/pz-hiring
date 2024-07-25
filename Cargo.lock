@@ -173,7 +173,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "pz-web"
+name = "pz_web"
 version = "0.1.0"
 dependencies = [
  "getrandom",
