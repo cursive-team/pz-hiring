@@ -224,13 +224,13 @@ mod tests {
             salary: 150,    // can pay up to 1.5mil
             criteria: [true, false, true],
         };
-        let shares = vec![
+        let shares = [
             ck_0.collective_key_share.clone(),
             ck_1.collective_key_share.clone(),
         ];
         let data_0: ClientEncryptedData =
-            client_encrypt_data(0, ck_0.client_key.clone(), shares.clone(), jc_0.clone());
-        let data_1 = client_encrypt_data(1, ck_1.client_key.clone(), shares, jc_1.clone());
+            client_encrypt_data(0, ck_0.client_key.clone(), &shares, jc_0.clone());
+        let data_1 = client_encrypt_data(1, ck_1.client_key.clone(), &shares, jc_1.clone());
         println!(
             "(1) Clients encrypt their input with their own key, {:?}ms",
             now.elapsed().as_millis()
