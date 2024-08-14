@@ -12,7 +12,7 @@ use crate::ni_hiring::{
 
 #[wasm_bindgen]
 pub fn ni_hiring_init_web() {
-    set_parameter_set(ParameterSelector::NonInteractiveLTE2Party);
+    set_parameter_set(ParameterSelector::NonInteractiveLTE2Party60Bit);
     let mut seed = [0u8; 32];
     thread_rng().fill_bytes(&mut seed);
     set_common_reference_seed(seed);

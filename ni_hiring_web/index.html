@@ -16,6 +16,27 @@
         ni_hiring_client_full_dec_web,
       } from "./pz_web.js";
 
+      import * as msgpack from "https://cdn.jsdelivr.net/npm/@msgpack/msgpack@2.8.0/+esm";
+
+      import pako from "https://cdn.jsdelivr.net/npm/pako@2.1.0/+esm";
+
+      export const serializeData = (data) => {
+        return JSON.stringify(data, (key, value) => {
+          if (typeof value === "bigint") {
+            return value.toString() + "n";
+          }
+          if (Array.isArray(value)) {
+            return value.map((item) => {
+              if (typeof item === "bigint") {
+                return item.toString() + "n";
+              }
+              return item;
+            });
+          }
+          return value;
+        });
+      };
+
       init().then(() => {
         console.log("each time includes both parties");
 
@@ -32,6 +53,32 @@
         let ck_1 = ni_hiring_client_setup_web(1, 2);
         console.timeEnd("ck_1 time");
 
+        console.time("server_key_share size benchmark");
+
+        // Original size
+        const serializedKeyShare = serializeData(ck_0.server_key_share);
+
+        const originalSize = new Blob([serializedKeyShare]).size;
+        console.log(
+          `Original size: ${(originalSize / (1024 * 1024)).toFixed(2)} MB`
+        );
+
+        // // MessagePack size
+        // const msgpackSize = new Blob([msgpack.encode(ck_0.server_key_share)])
+        //   .size;
+        // console.log(
+        //   `MessagePack size: ${(msgpackSize / (1024 * 1024)).toFixed(2)} MB`
+        // );
+
+        // Gzip size (estimated using pako library)
+
+        const gzipSize = pako.gzip(serializedKeyShare).length;
+        console.log(
+          `Gzip size (estimated): ${(gzipSize / (1024 * 1024)).toFixed(2)} MB`
+        );
+
+        console.timeEnd("server_key_share size benchmark");
+
         console.time("server setup time");
         ni_hiring_server_setup_web(
           ck_0.server_key_share,
@@ -41,7 +88,7 @@
 
         console.time("jc_0_fhe time");
         let jc_0_fhe = ni_hiring_client_encrypt_web(
-          ck_0,
+          ck_0.client_key,
           true,
           false,
           100,
@@ -52,7 +99,7 @@
 
         console.time("jc_1_fhe time");
         let jc_1_fhe = ni_hiring_client_encrypt_web(
-          ck_1,
+          ck_1.client_key,
           true,
           true,
           150,
@@ -64,6 +111,25 @@
         console.time("res_fhe time");
         let res_fhe = ni_hiring_server_compute_web(jc_0_fhe, jc_1_fhe);
         console.timeEnd("res_fhe time");
+
+        console.time("res_fhe size benchmark");
+
+        // Original size
+        const serializedResFhe = serializeData(res_fhe);
+        const fheOriginalSize = new Blob([serializedResFhe]).size;
+        console.log(
+          `Original size: ${(fheOriginalSize / (1024 * 1024)).toFixed(2)} MB`
+        );
+
+        // Gzip size (estimated using pako library)
+        const fheGzipSize = pako.gzip(serializedResFhe).length;
+        console.log(
+          `Gzip size (estimated): ${(fheGzipSize / (1024 * 1024)).toFixed(
+            2
+          )} MB`
+        );
+
+        console.timeEnd("res_fhe size benchmark");
 
         console.time("res_fhe_share_0");
         let res_fhe_share_0 = ni_hiring_client_dec_share_web(ck_0, res_fhe);

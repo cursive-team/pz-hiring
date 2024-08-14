@@ -48,8 +48,6 @@ fn hiring_match(a: JobCriteria, b: JobCriteria) -> bool {
         b_criteria_match &= !b.criteria[i] | a.criteria[i];
     }
 
-    // if a is not the recruiter, a's criteria is not required to be met
-    // same goes for b
     let criteria_match = (!a.position | a_criteria_match) & (!b.position | b_criteria_match);
 
     both_in_market & compatible_pos & salary_match & criteria_match
@@ -82,8 +80,8 @@ pub fn hiring_match_fhe(a: FheJobCriteria, b: FheJobCriteria) -> FheBool {
 
 #[derive(Clone, Serialize, Deserialize)]
 pub struct ClientKeys {
-    pub client_key: ClientKey,
-    pub server_key_share: ServerKeyShare,
+    client_key: ClientKey,
+    server_key_share: ServerKeyShare,
 }
 
 pub fn client_setup(id: usize, num_parties: usize) -> ClientKeys {
@@ -107,20 +105,17 @@ pub fn server_setup(server_key_shares: Vec<ServerKeyShare>) {
 
 #[derive(Serialize, Deserialize)]
 pub struct ClientEncryptedData {
-    bool_enc: NonInteractiveBatchedFheBools<Vec<Vec<u64>>>,
+    bool_enc: NonInteractiveSeededFheBools<Vec<u64>, [u8; 32]>,
     salary_enc: EncFheUint8,
 }
 
-pub fn client_encrypt_job_criteria(jc: JobCriteria, ck: ClientKeys) -> ClientEncryptedData {
-    let bool_enc: NonInteractiveBatchedFheBools<_> = ck.client_key.encrypt(
-        [jc.in_market, jc.position]
-            .iter()
-            .copied()
-            .chain(jc.criteria.iter().copied())
-            .collect::<Vec<_>>()
-            .as_slice(),
-    );
-    let salary_enc = ck.client_key.encrypt(vec![jc.salary].as_slice());
+pub fn client_encrypt_job_criteria(jc: JobCriteria, ck: ClientKey) -> ClientEncryptedData {
+    let bool_vec = ([jc.in_market, jc.position].iter().copied())
+        .chain(jc.criteria.iter().copied())
+        .collect::<Vec<_>>();
+
+    let bool_enc = ck.encrypt(bool_vec.as_slice());
+    let salary_enc = ck.encrypt(vec![jc.salary].as_slice());
 
     ClientEncryptedData {
         bool_enc,
@@ -129,18 +124,16 @@ pub fn client_encrypt_job_criteria(jc: JobCriteria, ck: ClientKeys) -> ClientEnc
 }
 
 pub fn server_extract_job_criteria(id: usize, data: ClientEncryptedData) -> FheJobCriteria {
-    let bool_enc_ks = data.bool_enc.key_switch(id);
-    let in_market = FheBool {
-        data: bool_enc_ks.extract(0),
-    };
-    let position = FheBool {
-        data: bool_enc_ks.extract(1),
-    };
+    let tmp = data
+        .bool_enc
+        .unseed::<Vec<Vec<u64>>>()
+        .key_switch(id)
+        .extract_all();
+    let (in_market, position) = { (tmp[0].clone(), tmp[1].clone()) };
+
     let mut criteria: [FheBool; NUM_CRITERIA] = Default::default();
     for i in 0..NUM_CRITERIA {
-        criteria[i] = FheBool {
-            data: bool_enc_ks.extract(i + 2),
-        };
+        criteria[i] = tmp[i + 2].clone();
     }
 
     let salary = data
@@ -176,7 +169,7 @@ mod tests {
 
     #[test]
     fn ni_hiring_query() {
-        set_parameter_set(ParameterSelector::NonInteractiveLTE2Party);
+        set_parameter_set(ParameterSelector::NonInteractiveLTE2Party60Bit);
 
         /*
          * Phase 1: KEY SETUP
