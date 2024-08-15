@@ -20,3 +20,5 @@ To run the web version of the project, first run: `npm install -g http-server`. 
 To build the node version, run `wasm-pack build --target nodejs --out-dir ./pz_hiring`.
 
 To run the node version, you can then go to `./node_test`, run `npm i`, and then run `node index.js`.
+
+You can use the functions in the `pz-hiring` package, which you can find at https://www.npmjs.com/package/pz-hiring.
