@@ -1,6 +1,6 @@
 {
   "name": "pz-hiring",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "files": [
     "pz_web_bg.wasm",
     "pz_web.js",
