@@ -128,14 +128,8 @@
         );
         console.timeEnd("ungzip time");
 
-        console.log("ck0 ungzip", ck0Ungzipped);
-        console.log("ck1 ungzip", ck1Ungzipped);
-
         console.time("server setup time");
-        ni_hiring_server_setup_web(
-          deserializeMPCData(serializeData(ck_0.server_key_share)),
-          deserializeMPCData(serializeData(ck_1.server_key_share))
-        );
+        ni_hiring_server_setup_web(ck0Ungzipped, ck1Ungzipped);
         console.timeEnd("server setup time");
 
         console.time("jc_0_fhe time");
