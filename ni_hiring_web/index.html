@@ -41,7 +41,7 @@
         console.log("each time includes both parties");
 
         console.time("setup time");
-        ni_hiring_init_web();
+        ni_hiring_init_web(BigInt(1));
         console.timeEnd("setup time");
 
         console.time("ck_0 time");
@@ -52,6 +52,29 @@
         console.time("ck_1 time");
         let ck_1 = ni_hiring_client_setup_web(1, 2);
         console.timeEnd("ck_1 time");
+
+        console.time("Benchmarking client_key size");
+
+        // Original size for client_key
+        const serializedClientKey = serializeData(ck_0.client_key);
+        const clientKeyOriginalSize = new Blob([serializedClientKey]).size;
+        console.log(
+          `Client key original size: ${(
+            clientKeyOriginalSize /
+            (1024 * 1024)
+          ).toFixed(5)} MB`
+        );
+
+        // Gzip size for client_key (estimated using pako library)
+        const clientKeyGzipSize = pako.gzip(serializedClientKey).length;
+        console.log(
+          `Client key gzip size (estimated): ${(
+            clientKeyGzipSize /
+            (1024 * 1024)
+          ).toFixed(2)} MB`
+        );
+
+        console.timeEnd("Finished benchmarking client_key size");
 
         console.time("server_key_share size benchmark");
 
@@ -90,9 +113,9 @@
         let jc_0_fhe = ni_hiring_client_encrypt_web(
           ck_0.client_key,
           true,
-          false,
-          100,
-          [1, 1, 1]
+          true,
+          [0, 0, 1, 1, 0, 0, 1, 1, 1, 1, 1, 1, 0, 1, 1, 0, 0, 1, 0, 0],
+          200
         );
         console.log(jc_0_fhe);
         console.timeEnd("jc_0_fhe time");
@@ -100,13 +123,35 @@
         console.time("jc_1_fhe time");
         let jc_1_fhe = ni_hiring_client_encrypt_web(
           ck_1.client_key,
+          false,
           true,
-          true,
-          150,
-          [1, 1, 1]
+          [1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 1, 0, 1, 0, 1, 1, 0, 0],
+          150
         );
         console.log(jc_1_fhe);
         console.timeEnd("jc_1_fhe time");
+
+        console.time("encrypted data size benchmark");
+
+        // Benchmark jc_0_fhe size
+        const serializedJc0Fhe = serializeData(jc_0_fhe);
+        const jc0FheOriginalSize = new Blob([serializedJc0Fhe]).size;
+        console.log(
+          `jc_0_fhe original size: ${(
+            jc0FheOriginalSize /
+            (1024 * 1024)
+          ).toFixed(2)} MB`
+        );
+
+        const jc0FheGzipSize = pako.gzip(serializedJc0Fhe).length;
+        console.log(
+          `jc_0_fhe gzip size (estimated): ${(
+            jc0FheGzipSize /
+            (1024 * 1024)
+          ).toFixed(2)} MB`
+        );
+
+        console.timeEnd("encrypted data size benchmark");
 
         console.time("res_fhe time");
         let res_fhe = ni_hiring_server_compute_web(jc_0_fhe, jc_1_fhe);

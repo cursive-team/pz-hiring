@@ -1,8 +1,9 @@
 /* tslint:disable */
 /* eslint-disable */
 /**
+* @param {bigint} input_seed
 */
-export function ni_hiring_init_web(): void;
+export function ni_hiring_init_web(input_seed: bigint): void;
 /**
 * @param {number} id
 * @param {number} num_parties
@@ -16,13 +17,13 @@ export function ni_hiring_client_setup_web(id: number, num_parties: number): any
 export function ni_hiring_server_setup_web(sk_share_0: any, sk_share_1: any): void;
 /**
 * @param {any} ck
-* @param {boolean} in_market
 * @param {boolean} position
+* @param {boolean} commitment
+* @param {Uint8Array} combined
 * @param {number} salary
-* @param {Uint8Array} criteria
 * @returns {any}
 */
-export function ni_hiring_client_encrypt_web(ck: any, in_market: boolean, position: boolean, salary: number, criteria: Uint8Array): any;
+export function ni_hiring_client_encrypt_web(ck: any, position: boolean, commitment: boolean, combined: Uint8Array, salary: number): any;
 /**
 * @param {any} jc_fhe_0
 * @param {any} jc_fhe_1
@@ -48,7 +49,7 @@ export type InitInput = RequestInfo | URL | Response | BufferSource | WebAssembl
 
 export interface InitOutput {
   readonly memory: WebAssembly.Memory;
-  readonly ni_hiring_init_web: () => void;
+  readonly ni_hiring_init_web: (a: number) => void;
   readonly ni_hiring_client_setup_web: (a: number, b: number) => number;
   readonly ni_hiring_server_setup_web: (a: number, b: number) => void;
   readonly ni_hiring_client_encrypt_web: (a: number, b: number, c: number, d: number, e: number, f: number) => number;

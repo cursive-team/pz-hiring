@@ -13,65 +13,99 @@ pub const NUM_CRITERIA: usize = 3;
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct JobCriteria {
-    pub in_market: bool,                // 0 = not in market, 1 = in market
-    pub position: bool,                 // 0 = hunter, 1 = recruiter
-    pub salary: u8,                     // x * $10,000
-    pub criteria: [bool; NUM_CRITERIA], // job criteria as boolean
+    pub position: bool, // 0 = hunter, 1 = recruiter
+    pub commitment: bool,
+    pub education: [bool; 4],
+    pub experience: [bool; 8],
+    pub interests: [bool; 4],
+    pub company_stage: [bool; 4],
+    pub salary: u8, // x * $3,000
 }
 
 #[derive(Clone, Serialize, Deserialize)]
 pub struct FheJobCriteria {
-    in_market: FheBool,
-    position: FheBool,
-    salary: FheUint8,
-    criteria: [FheBool; NUM_CRITERIA],
+    pub position: FheBool,
+    pub commitment: FheBool,
+    pub education: [FheBool; 4],
+    pub experience: [FheBool; 8],
+    pub interests: [FheBool; 4],
+    pub company_stage: [FheBool; 4],
+    pub salary: FheUint8,
 }
 
 fn hiring_match(a: JobCriteria, b: JobCriteria) -> bool {
-    // both need to be in the market
-    let both_in_market = a.in_market & b.in_market;
-
-    // need to match recruiter with hunter
+    // check a is a recruiter and b is searcher
     let compatible_pos = a.position ^ b.position;
+    let a_recruiter = a.position;
 
-    // if a is recruiter, a's salary upper bound should be higher
-    // than b's salary lower bound. vice versa if b is recruiter
-    let salary_match = (a.salary > b.salary) ^ b.position;
-
-    // if a is recruiter, their criteria is required to be met for a match
-    // to be made, vice versa if b is recruiter
-    let mut a_criteria_match = !a.criteria[0] | b.criteria[0];
-    let mut b_criteria_match = !b.criteria[0] | a.criteria[0];
-
-    for i in 1..NUM_CRITERIA {
-        a_criteria_match &= !a.criteria[i] | b.criteria[i];
-        b_criteria_match &= !b.criteria[i] | a.criteria[i];
+    // check qualifications
+    let mut education_match = a.education[0] & b.education[0];
+    for i in 1..4 {
+        education_match |= a.education[i] & b.education[i];
+    }
+    let mut experience_match = a.experience[0] & b.experience[0];
+    for i in 1..8 {
+        experience_match |= a.experience[i] & b.experience[i];
     }
 
-    let criteria_match = (!a.position | a_criteria_match) & (!b.position | b_criteria_match);
+    // check overlap in opportunity
+    let salary_match = a.salary > b.salary;
+    let mut interest_overlap = a.interests[0] & b.interests[0];
+    for i in 1..4 {
+        interest_overlap |= a.interests[i] & b.interests[i];
+    }
+    let mut stage_overlap = a.company_stage[0] & b.company_stage[0];
+    for i in 1..4 {
+        stage_overlap |= a.company_stage[i] & b.company_stage[i];
+    }
 
-    both_in_market & compatible_pos & salary_match & criteria_match
+    // check alignment on commitment
+    let commitment_overlap = !a.commitment | b.commitment;
+
+    compatible_pos
+        & a_recruiter
+        & education_match
+        & experience_match
+        & salary_match
+        & interest_overlap
+        & stage_overlap
+        & commitment_overlap
 }
 
 pub fn hiring_match_fhe(a: FheJobCriteria, b: FheJobCriteria) -> FheBool {
-    let both_in_market: &FheBool = &(&a.in_market & &b.in_market);
+    // check a is a recruiter and b is searcher
+    let compatible_pos = &a.position ^ &b.position;
+    let a_recruiter = &a.position;
 
-    let compatible_pos: &FheBool = &(&a.position ^ &b.position);
-
-    let salary_match: &FheBool = &((&a.salary.gt(&b.salary)) ^ &b.position);
-
-    let mut a_criteria_match = &!&a.criteria[0] | &b.criteria[0];
-    let mut b_criteria_match = &!&b.criteria[0] | &a.criteria[0];
-
-    for i in 1..NUM_CRITERIA {
-        a_criteria_match &= &!&a.criteria[i] | &b.criteria[i];
-        b_criteria_match &= &!&b.criteria[i] | &a.criteria[i];
+    // check qualifications
+    let mut education_match = &a.education[0] & &b.education[0];
+    for i in 1..4 {
+        education_match |= &a.education[i] & &b.education[i];
+    }
+    let mut experience_match = &a.experience[0] & &b.experience[0];
+    for i in 1..8 {
+        experience_match |= &a.experience[i] & &b.experience[i];
     }
 
-    let criteria_match =
-        &(&!&a.position | &a_criteria_match) & &(&!&b.position | &b_criteria_match);
+    // check overlap in opportunity
+    let salary_match = &a.salary.gt(&b.salary);
+    let mut interest_overlap = &a.interests[0] & &b.interests[0];
+    for i in 1..4 {
+        interest_overlap |= &a.interests[i] & &b.interests[i];
+    }
+    let mut stage_overlap = &a.company_stage[0] & &b.company_stage[0];
+    for i in 1..4 {
+        stage_overlap |= &a.company_stage[i] & &b.company_stage[i];
+    }
 
-    &(&(both_in_market & compatible_pos) & salary_match) & &criteria_match
+    // check alignment on commitment
+    let commitment_overlap = &!&a.commitment | &b.commitment;
+
+    &(&(&(&(&(&(&compatible_pos & &a_recruiter) & &education_match) & &experience_match)
+        & salary_match)
+        & &interest_overlap)
+        & &stage_overlap)
+        & &commitment_overlap
 }
 
 /**
@@ -110,8 +144,11 @@ pub struct ClientEncryptedData {
 }
 
 pub fn client_encrypt_job_criteria(jc: JobCriteria, ck: ClientKey) -> ClientEncryptedData {
-    let bool_vec = ([jc.in_market, jc.position].iter().copied())
-        .chain(jc.criteria.iter().copied())
+    let bool_vec = ([jc.position, jc.commitment].iter().copied())
+        .chain(jc.education.iter().copied())
+        .chain(jc.experience.iter().copied())
+        .chain(jc.interests.iter().copied())
+        .chain(jc.company_stage.iter().copied())
         .collect::<Vec<_>>();
 
     let bool_enc = ck.encrypt(bool_vec.as_slice());
@@ -129,11 +166,26 @@ pub fn server_extract_job_criteria(id: usize, data: ClientEncryptedData) -> FheJ
         .unseed::<Vec<Vec<u64>>>()
         .key_switch(id)
         .extract_all();
-    let (in_market, position) = { (tmp[0].clone(), tmp[1].clone()) };
+    let (position, commitment) = { (tmp[0].clone(), tmp[1].clone()) };
 
-    let mut criteria: [FheBool; NUM_CRITERIA] = Default::default();
-    for i in 0..NUM_CRITERIA {
-        criteria[i] = tmp[i + 2].clone();
+    let mut education: [FheBool; 4] = Default::default();
+    for i in 0..4 {
+        education[i] = tmp[2 + i].clone();
+    }
+
+    let mut experience: [FheBool; 8] = Default::default();
+    for i in 0..8 {
+        experience[i] = tmp[6 + i].clone();
+    }
+
+    let mut interests: [FheBool; 4] = Default::default();
+    for i in 0..4 {
+        interests[i] = tmp[14 + i].clone();
+    }
+
+    let mut company_stage: [FheBool; 4] = Default::default();
+    for i in 0..4 {
+        company_stage[i] = tmp[18 + i].clone();
     }
 
     let salary = data
@@ -143,10 +195,13 @@ pub fn server_extract_job_criteria(id: usize, data: ClientEncryptedData) -> FheJ
         .extract_at(0);
 
     FheJobCriteria {
-        in_market,
         position,
+        commitment,
+        education,
+        experience,
+        interests,
+        company_stage,
         salary,
-        criteria,
     }
 }
 
@@ -211,19 +266,25 @@ mod tests {
         now = std::time::Instant::now();
 
         let jc_0 = JobCriteria {
-            in_market: true,
-            position: false, // looking for job
-            salary: 100,     // asking for at least 1mil
-            criteria: [true, true, true],
+            position: true, // recruiter
+            commitment: true,
+            education: [false, false, true, true],
+            experience: [false, false, true, true, true, true, true, true],
+            interests: [false, true, true, false],
+            company_stage: [false, true, false, false],
+            salary: 200, // asking for at least 1mil
         };
         let jc_1 = JobCriteria {
-            in_market: true,
-            position: true, // recruiter
-            salary: 150,    // can pay up to 1.5mil
-            criteria: [true, false, true],
+            position: false, // searcher
+            commitment: true,
+            education: [true, true, true, false],
+            experience: [true, true, true, true, false, false, false, false],
+            interests: [true, false, true, false],
+            company_stage: [true, true, false, false],
+            salary: 150, // asking for at least 1mil
         };
-        let data_0 = client_encrypt_job_criteria(jc_0.clone(), ck_0.clone());
-        let data_1 = client_encrypt_job_criteria(jc_1.clone(), ck_1.clone());
+        let data_0 = client_encrypt_job_criteria(jc_0.clone(), ck_0.client_key.clone());
+        let data_1 = client_encrypt_job_criteria(jc_1.clone(), ck_1.client_key.clone());
         println!(
             "(1) Clients encrypt their input with their own key, {:?}ms",
             now.elapsed().as_millis()

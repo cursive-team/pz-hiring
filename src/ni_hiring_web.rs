@@ -1,5 +1,5 @@
 use phantom_zone::{set_common_reference_seed, set_parameter_set, ParameterSelector};
-use rand::{thread_rng, RngCore};
+use rand::{rngs::StdRng, thread_rng, Rng, RngCore, SeedableRng};
 use serde::Serialize;
 use serde_wasm_bindgen::Serializer;
 use wasm_bindgen::{prelude::wasm_bindgen, JsValue};
@@ -7,14 +7,14 @@ use wasm_bindgen::{prelude::wasm_bindgen, JsValue};
 use crate::ni_hiring::{
     client_encrypt_job_criteria, client_full_decrypt, client_generate_share, client_setup,
     hiring_match_fhe, server_extract_job_criteria, server_setup, ClientEncryptedData, JobCriteria,
-    NUM_CRITERIA,
 };
 
 #[wasm_bindgen]
-pub fn ni_hiring_init_web() {
+pub fn ni_hiring_init_web(input_seed: u64) {
     set_parameter_set(ParameterSelector::NonInteractiveLTE2Party60Bit);
     let mut seed = [0u8; 32];
-    thread_rng().fill_bytes(&mut seed);
+    let mut rng = StdRng::seed_from_u64(input_seed); // Fixed seed for determinism
+    rng.fill_bytes(&mut seed);
     set_common_reference_seed(seed);
 }
 
@@ -38,23 +38,26 @@ pub fn ni_hiring_server_setup_web(sk_share_0: JsValue, sk_share_1: JsValue) {
 #[wasm_bindgen]
 pub fn ni_hiring_client_encrypt_web(
     ck: JsValue,
-    in_market: bool,
     position: bool,
+    commitment: bool,
+    combined: &[u8], // education + experience + interests + company_stage
     salary: u8,
-    criteria: &[u8],
 ) -> JsValue {
-    let criteria_bools: [bool; NUM_CRITERIA] = criteria
+    let criteria_bools: [bool; 20] = combined
         .iter()
-        .take(NUM_CRITERIA)
+        .take(20)
         .map(|&num| num != 0)
         .collect::<Vec<bool>>()
         .try_into()
         .unwrap();
     let jc = JobCriteria {
-        in_market,
         position,
+        commitment,
+        education: criteria_bools[0..4].try_into().unwrap(),
+        experience: criteria_bools[4..12].try_into().unwrap(),
+        interests: criteria_bools[12..16].try_into().unwrap(),
+        company_stage: criteria_bools[16..20].try_into().unwrap(),
         salary,
-        criteria: criteria_bools,
     };
     let ck = serde_wasm_bindgen::from_value(ck).unwrap();
     let s = Serializer::new().serialize_large_number_types_as_bigints(true);

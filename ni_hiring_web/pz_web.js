@@ -181,9 +181,10 @@ function debugString(val) {
     return className;
 }
 /**
+* @param {bigint} input_seed
 */
-export function ni_hiring_init_web() {
-    wasm.ni_hiring_init_web();
+export function ni_hiring_init_web(input_seed) {
+    wasm.ni_hiring_init_web(input_seed);
 }
 
 /**
@@ -212,16 +213,16 @@ function passArray8ToWasm0(arg, malloc) {
 }
 /**
 * @param {any} ck
-* @param {boolean} in_market
 * @param {boolean} position
+* @param {boolean} commitment
+* @param {Uint8Array} combined
 * @param {number} salary
-* @param {Uint8Array} criteria
 * @returns {any}
 */
-export function ni_hiring_client_encrypt_web(ck, in_market, position, salary, criteria) {
-    const ptr0 = passArray8ToWasm0(criteria, wasm.__wbindgen_malloc);
+export function ni_hiring_client_encrypt_web(ck, position, commitment, combined, salary) {
+    const ptr0 = passArray8ToWasm0(combined, wasm.__wbindgen_malloc);
     const len0 = WASM_VECTOR_LEN;
-    const ret = wasm.ni_hiring_client_encrypt_web(addHeapObject(ck), in_market, position, salary, ptr0, len0);
+    const ret = wasm.ni_hiring_client_encrypt_web(addHeapObject(ck), position, commitment, ptr0, len0, salary);
     return takeObject(ret);
 }
 
