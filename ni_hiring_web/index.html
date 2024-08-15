@@ -25,10 +25,52 @@
           if (typeof value === "bigint") {
             return value.toString() + "n";
           }
+          if (value instanceof Map) {
+            return {
+              dataType: "Map",
+              value: Array.from(value.entries()).map(([k, v]) => [
+                typeof k === "bigint" ? k.toString() + "n" : k,
+                v,
+              ]),
+            };
+          }
           if (Array.isArray(value)) {
             return value.map((item) => {
               if (typeof item === "bigint") {
                 return item.toString() + "n";
+              }
+              return item;
+            });
+          }
+          return value;
+        });
+      };
+
+      export const deserializeMPCData = (data) => {
+        return JSON.parse(data, (key, value) => {
+          if (typeof value === "string" && /^\d+n$/.test(value)) {
+            return BigInt(value.slice(0, -1));
+          }
+          if (value && typeof value === "object" && value.dataType === "Map") {
+            return new Map(
+              value.value.map(([k, v]) => [
+                typeof k === "string" && /^\d+n$/.test(k)
+                  ? BigInt(k.slice(0, -1))
+                  : k,
+                Array.isArray(v)
+                  ? v.map((item) =>
+                      typeof item === "string" && /^\d+n$/.test(item)
+                        ? BigInt(item.slice(0, -1))
+                        : item
+                    )
+                  : v,
+              ])
+            );
+          }
+          if (Array.isArray(value)) {
+            return value.map((item) => {
+              if (typeof item === "string" && /^\d+n$/.test(item)) {
+                return BigInt(item.slice(0, -1));
               }
               return item;
             });
@@ -53,59 +95,46 @@
         let ck_1 = ni_hiring_client_setup_web(1, 2);
         console.timeEnd("ck_1 time");
 
-        console.time("Benchmarking client_key size");
+        console.time("gzip time");
+        const ck0Gzip = pako.gzip(serializeData(ck_0.server_key_share));
+        const ck1Gzip = pako.gzip(serializeData(ck_1.server_key_share));
+        console.timeEnd("gzip time");
 
-        // Original size for client_key
-        const serializedClientKey = serializeData(ck_0.client_key);
-        const clientKeyOriginalSize = new Blob([serializedClientKey]).size;
+        console.time("ungzip time");
+        const ck0Ungzipped = deserializeMPCData(
+          pako.inflate(ck0Gzip, { to: "string" })
+        );
+        console.log("Comparing ck0Ungzipped to ck_0.server_key_share:");
+        console.log("ck0Ungzipped:", ck0Ungzipped);
+        console.log("ck_0.server_key_share:", ck_0.server_key_share);
         console.log(
-          `Client key original size: ${(
-            clientKeyOriginalSize /
-            (1024 * 1024)
-          ).toFixed(5)} MB`
+          "Differences:",
+          serializeData(ck0Ungzipped) === serializeData(ck_0.server_key_share)
+            ? "None"
+            : "Data differs"
         );
 
-        // Gzip size for client_key (estimated using pako library)
-        const clientKeyGzipSize = pako.gzip(serializedClientKey).length;
-        console.log(
-          `Client key gzip size (estimated): ${(
-            clientKeyGzipSize /
-            (1024 * 1024)
-          ).toFixed(2)} MB`
+        const ck1Ungzipped = deserializeMPCData(
+          pako.inflate(ck1Gzip, { to: "string" })
         );
-
-        console.timeEnd("Finished benchmarking client_key size");
-
-        console.time("server_key_share size benchmark");
-
-        // Original size
-        const serializedKeyShare = serializeData(ck_0.server_key_share);
-
-        const originalSize = new Blob([serializedKeyShare]).size;
+        console.log("Comparing ck1Ungzipped to ck_1.server_key_share:");
+        console.log("ck1Ungzipped:", ck1Ungzipped);
+        console.log("ck_1.server_key_share:", ck_1.server_key_share);
         console.log(
-          `Original size: ${(originalSize / (1024 * 1024)).toFixed(2)} MB`
+          "Differences:",
+          serializeData(ck1Ungzipped) === serializeData(ck_1.server_key_share)
+            ? "None"
+            : "Data differs"
         );
+        console.timeEnd("ungzip time");
 
-        // // MessagePack size
-        // const msgpackSize = new Blob([msgpack.encode(ck_0.server_key_share)])
-        //   .size;
-        // console.log(
-        //   `MessagePack size: ${(msgpackSize / (1024 * 1024)).toFixed(2)} MB`
-        // );
-
-        // Gzip size (estimated using pako library)
-
-        const gzipSize = pako.gzip(serializedKeyShare).length;
-        console.log(
-          `Gzip size (estimated): ${(gzipSize / (1024 * 1024)).toFixed(2)} MB`
-        );
-
-        console.timeEnd("server_key_share size benchmark");
+        console.log("ck0 ungzip", ck0Ungzipped);
+        console.log("ck1 ungzip", ck1Ungzipped);
 
         console.time("server setup time");
         ni_hiring_server_setup_web(
-          ck_0.server_key_share,
-          ck_1.server_key_share
+          deserializeMPCData(serializeData(ck_0.server_key_share)),
+          deserializeMPCData(serializeData(ck_1.server_key_share))
         );
         console.timeEnd("server setup time");
 
