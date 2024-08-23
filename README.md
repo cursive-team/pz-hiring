@@ -1,6 +1,6 @@
 # pz-hiring
 
-Some browser and Node.js code for doing private hiring matching.
+Some browser and Node.js code for doing private hiring matching. Built on top of Gauss Lab's phantom-zone repo: github.com/gausslabs/phantom-zone
 
 ## How to use
 
