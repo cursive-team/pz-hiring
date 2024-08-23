@@ -1,6 +1,6 @@
-# pz-web
+# pz-hiring
 
-Compiltion of a few useful phantom-zone applications usable in a browser. All operations are currently in WASM, Rust server implementations will be added shortly.
+Some browser and Node.js code for doing private hiring matching.
 
 ## How to use
 
