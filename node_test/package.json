@@ -11,6 +11,6 @@
   "license": "ISC",
   "dependencies": {
     "pako": "^2.1.0",
-    "pz-hiring": "file:../pz_hiring"
+    "pz-hiring": "0.3.0"
   }
 }
