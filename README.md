@@ -1,12 +1,12 @@
 # pz-hiring
 
-A hiring phantom-zone application usable in a browser & in a node server, built in the non-interactive setting.
+A job matching phantom-zone application usable in a browser & in a Node.js server, built with the non-interactive setting.
 
 Rust server implementation & connection to JS apps will be added soon.
 
 ## How to use
 
-### Testing
+### Testing Rust
 
 To test the hiring query:
 `cargo test --release -- --nocapture ni_hiring_query`
