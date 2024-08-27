@@ -200,18 +200,24 @@
         console.timeEnd("res_fhe size benchmark");
 
         console.time("res_fhe_share_0");
-        let res_fhe_share_0 = ni_hiring_client_dec_share_web(ck_0, res_fhe);
+        let res_fhe_share_0 = ni_hiring_client_dec_share_web(
+          ck_0.client_key,
+          res_fhe
+        );
         console.log(res_fhe_share_0);
         console.timeEnd("res_fhe_share_0");
 
         console.time("res_fhe_share_1");
-        let res_fhe_share_1 = ni_hiring_client_dec_share_web(ck_1, res_fhe);
+        let res_fhe_share_1 = ni_hiring_client_dec_share_web(
+          ck_1.client_key,
+          deserializeMPCData(serializeData(res_fhe))
+        );
         console.log(res_fhe_share_1);
         console.timeEnd("res_fhe_share_1");
 
         console.time("res_fhe_full_dec");
         let res = ni_hiring_client_full_dec_web(
-          ck_0,
+          ck_0.client_key,
           res_fhe,
           res_fhe_share_0,
           res_fhe_share_1
