@@ -209,12 +209,12 @@ pub fn server_extract_job_criteria(id: usize, data: ClientEncryptedData) -> FheJ
  * FHE DECRYPTION CODE
  */
 
-pub fn client_generate_share(ck: ClientKeys, result: FheBool) -> u64 {
-    ck.client_key.gen_decryption_share(&result)
+pub fn client_generate_share(ck: ClientKey, result: FheBool) -> u64 {
+    ck.gen_decryption_share(&result)
 }
 
-pub fn client_full_decrypt(ck: ClientKeys, result: FheBool, shares: [u64; 2]) -> bool {
-    ck.client_key.aggregate_decryption_shares(&result, &shares)
+pub fn client_full_decrypt(ck: ClientKey, result: FheBool, shares: [u64; 2]) -> bool {
+    ck.aggregate_decryption_shares(&result, &shares)
 }
 
 #[cfg(test)]
@@ -308,8 +308,8 @@ mod tests {
         // Clients produce decryption share
         now = std::time::Instant::now();
         let decryption_shares = [
-            client_generate_share(ck_0.clone(), match_res_fhe.clone()),
-            client_generate_share(ck_1, match_res_fhe.clone()),
+            client_generate_share(ck_0.client_key.clone(), match_res_fhe.clone()),
+            client_generate_share(ck_1.client_key.clone(), match_res_fhe.clone()),
         ];
         println!(
             "(4) Decryption shares generated, {:?}ms",
